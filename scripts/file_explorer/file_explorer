@@ -1,0 +1,23 @@
+#! /usr/bin/env fish
+
+################################################################################
+###                               File Explorer                              ###
+################################################################################
+# Just a wrapper to avoid having my file browser hotkey accidentally open a    #
+# bunch of overlapping windows by checking for the app_id in the sway tree     #
+# before spawning an instance                                                  #
+################################################################################
+#                                Hari Ganti | 2024/06/15 | hariganti@gmail.com #
+################################################################################
+
+set -l app_id wezi
+set -l cfg    $HOME/.config/wezterm/file_explorer.lua
+set -l start  exec -- wezterm --config-file $cfg start --class $app_id yazi
+set -l window [app_id = $app_id]
+set -l show   move to workspace current
+set -l hide   move to scratchpad
+set -l resize resize set width 80 ppt height 60 ppt
+
+swaymsg     $window $show , $resize , focus        \
+|| swaymsg  $window $hide                          \
+|| swaymsg  $start

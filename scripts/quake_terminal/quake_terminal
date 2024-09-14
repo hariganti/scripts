@@ -1,0 +1,29 @@
+#! /usr/bin/env fish
+
+################################################################################
+###                              Quake Terminal                              ###
+################################################################################
+# For some reason, running this directly in my sway config just doesn't work,  #
+# so I am trying to put it in a wrapper script to see if that makes it work -- #
+# It largely does. Just a wrapper to see if an app with the "quezterm" app_id  #
+# already exists and if it does, to alternately show or hide it on the current #
+# workspace. If it doesn't launches a terminal with that app_id. The sleeps    #
+# seem to be necessary to provide time for the previous settings to apply,     #
+# sadly, but they only affect the initial launch                               #
+################################################################################
+#                                Hari Ganti | 2024/06/15 | hariganti@gmail.com #
+################################################################################
+
+set -l app_id quezterm
+set -l window [app_id = $app_id]
+set -l cfg    $HOME/.config/wezterm/quake.lua
+set -l start  exec -- wezterm --config-file $cfg start --class $app_id
+set -l show   move to workspace current
+set -l hide   move to scratchpad
+set -l move   move position 5 ppt 5 px
+set -l resize resize set width 90 ppt height 50 ppt
+
+swaymsg     $window $show , focus    \
+|| swaymsg  $window $hide            \
+|| swaymsg  $start                   \
+&& swaymsg  $window $resize , $move

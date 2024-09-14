@@ -1,0 +1,73 @@
+#! /usr/bin/env fish
+
+################################################################################
+###                                 Settings                                 ###
+################################################################################
+# Wrapper to provide generic setting adjustments for things like backlight and #
+# volume. Primarily focused on items that need to be adjusted through a range  #
+# rather than discretely so the notifications don't cascade and replace each   #
+# other instead. Generally accepts the same arguments as the underlying        #
+# used to make the actual adjustment                                           #
+################################################################################
+#                                Hari Ganti | 2024/07/04 | hariganti@gmail.com #
+################################################################################
+
+function brightness -S # -S allows variables to break the function scope
+  set summary Backlight
+  set param   (brightnessctl -e set $argv[1] | string match -rg '([0-9]{1,3})%')
+  set param   (math round 100 x \( $param - 25 \) / 75)
+  set param   (math max 0, (math min 100, $param))
+end
+
+function volume -S
+  set summary (wpctl inspect $argv[1] | string match -rg 'node.nick = "(.*)"')
+  if test -z "$summary"
+    set summary \
+    (
+      wpctl inspect $argv[1] | string match -rg 'node.description = "(.*)"'
+    )
+  end
+
+  wpctl set-volume $argv
+  set   param (wpctl get-volume $argv[1] | string match -rg 'Volume: (.{0,4})')
+  set   param (math 100 x $param)
+end
+
+if test (count $argv) -lt 2
+  echo 'Usage is: "settings <NAME> <VALUE>"'
+  return
+end
+
+# Check for lock
+set lockfile $HOME/.cache/settings/$argv[1].lock
+if test -e "$lockfile"
+  return
+else
+  touch $lockfile
+end
+
+# Get previous notification ID to replace, if it exists
+set idfile  $HOME/.cache/settings/$argv[1]
+if test -e "$idfile"
+  set nid '-r' (cat $idfile)
+end
+
+# Set desired parameter
+$argv[1] $argv[2..-1] # Call the first argument with the rest as arguments for it
+
+# TODO: Set the icon here
+echo $param
+
+# Send notification
+notify-send           \
+  -p                  \
+  -u low              \
+  $nid                \
+  -c setting          \
+  # -i $icon            \
+  -h INT:value:$param \
+  $summary            \
+  $param%             \
+  > $idfile
+
+rm $lockfile

@@ -1,0 +1,92 @@
+#! /usr/bin/env fish
+
+################################################################################
+###                                Audioshare                                ###
+################################################################################
+# Fish script to create null sinks and loopbacks for audio sharing of playing  #
+# media, such as on Discord. Null sink modules are created to combine and to   #
+# split audio sources/sinks, so a single source can feed the splitter (SIMO)   #
+# and multiple sources can feed the output stream. Uses pulseaudio/pactl and   #
+# trash-cli (which is easily replaced by 'rm' if desired)                      #
+#------------------------------------------------------------------------------#
+#     Inputs    |                                          |      Outputs      #
+#---------------+                 Virtual                  +-------------------#
+#  PHY  |  VIR  |                                          |   PHY   |   VIR   #
+#-------+-------+------------------------------------------+---------+---------#
+#  Mic--+-------+------Loopback1------------------|        |         |         #
+#       |       |                             [Combiner]---+---------+-Stream  #
+#       |       |         |-------Loopback2-------|        |         |         #
+#       | Media-+-----[Splitter]                           |         |         #
+#       |       |         |------------Loopback3-----------+-Speaker |         #
+#------------------------------------------------------------------------------#
+#                                                                              #
+# Usage:                                                                       #
+#   audioshare setup    - Calls the setup function                             #
+#   audioshare cleanup  - Calls the cleanup function                           #
+################################################################################
+#                                Hari Ganti | 2024/06/08 | hariganti@gmail.com #
+################################################################################
+
+### GLOBALS ###
+
+set -l modfile $HOME/.cache/audioshare/pa-modules
+
+### FUNCTIONS ###
+
+function cleanup
+  # Check for loaded module data
+  if test -e "$argv[1]"
+    # Remove modules one by one
+    set -l devs (string split '\n' (cat $argv[1]))
+    for dev in $devs
+      pactl unload-module $dev
+    end
+
+    # Clean file with module IDs
+    trash-put $argv[1]
+  end
+end
+
+function setup
+  # Clean file with module IDs
+  cleanup $argv[1]
+  touch $argv[1]
+
+  # Load "Combiner"
+  pactl load-module                             \
+    module-null-sink                            \
+    sink_name=miso                              \
+    sink_properties=device.description=Combiner \
+    >> $argv[1]
+
+  # Load "Splitter"
+  pactl load-module                             \
+    module-null-sink                            \
+    sink_name=simo                              \
+    sink_properties=device.description=Splitter \
+    >> $argv[1]
+
+  # Load Loopback1
+  pactl load-module         \
+    module-loopback         \
+    source=@DEFAULT_SOURCE@ \
+    sink=miso               \
+    >> $argv[1]
+
+  # Load Loopback2
+  pactl load-module     \
+    module-loopback     \
+    source=simo.monitor \
+    sink=miso           \
+    >> $argv[1]
+
+  # Load Loopback3
+  pactl load-module     \
+    module-loopback     \
+    source=simo.monitor \
+    sink=@DEFAULT_SINK@ \
+    >> $argv[1]
+end
+
+### MAIN ###
+$argv[1] $modfile
