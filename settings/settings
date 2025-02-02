@@ -43,7 +43,7 @@ set lockfile $HOME/.cache/settings/$argv[1].lock
 if test -e "$lockfile"
   return
 else
-  touch $lockfile
+  mkfile $lockfile
 end
 
 # Get previous notification ID to replace, if it exists
