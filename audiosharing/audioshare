@@ -74,17 +74,17 @@ function setup
     >> $argv[1]
 
   # Load Loopback2
-  pactl load-module     \
-    module-loopback     \
-    source=simo.monitor \
-    sink=miso           \
+  pactl load-module       \
+    module-loopback       \
+    source=simo.monitor   \
+    sink=miso             \
     >> $argv[1]
 
   # Load Loopback3
-  pactl load-module     \
-    module-loopback     \
-    source=simo.monitor \
-    sink=@DEFAULT_SINK@ \
+  pactl load-module       \
+    module-loopback       \
+    source=simo.monitor   \
+    sink=@DEFAULT_SINK@   \
     >> $argv[1]
 end
 

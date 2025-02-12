@@ -28,7 +28,7 @@ function volume -S
     )
   end
 
-  wpctl set-volume $argv
+  wpctl set-volume -l 1.0 $argv
   set   param (wpctl get-volume $argv[1] | string match -rg 'Volume: (.{0,4})')
   set   param (math 100 x $param)
 end
