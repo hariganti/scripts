@@ -1,0 +1,85 @@
+#! /usr/bin/env fish
+
+################################################################################
+###                                Shadow Drive                              ###
+################################################################################
+# Open and close a Veracrypt volume as a hidden file/directory, and symlink    #
+# all files with full paths in the mirror directory                            #
+#                                                                              #
+# For example:                                                                 #
+# |------------------------------------|-------------------------------------| #
+# |           Hidden Volume            |            Regular Volume           | #
+# |------------------------------------+-------------------------------------| #
+# |  dir1                              |  dir1                               | #
+# |   |                                |   |-file1                           | #
+# |   |-file2--------------------------+---->file2                           | #
+# |                                    |                                     | #
+# |  dir2-------------------------------->dir2                               | #
+# |   |-file3                          |   |-file3                           | #
+# |------------------------------------|-------------------------------------| #
+#                                                                              #
+# file2 is symlinked from the hidden volume into the existing directory in the #
+# regular volume, and dir2 is symlinked into regular volume                    #
+################################################################################
+#                                Hari Ganti | 2025/03/03 | hariganti@gmail.com #
+################################################################################
+
+# TODO
+#   Check if existing files in mirror are symlinks to the current file and skip
+#   Check if shadir directory is actually a filename in the mirror and dedup
+#   Some kind of recursion protection in case a file symlinks to the shadir
+#     Maybe just don't follow any symlinks in the shadir since it's recursive
+
+### Symlink files and directories ###
+function linkr
+  for file in (ls $argv[1])
+    set -f shadir $argv[1]/$file
+    set -f regdir $argv[2]/$file
+    echo \n$file
+    if test -d "$shadir"
+      echo ... is a directory
+      if test -d "$regdir"
+        echo ... directory found in mirror, entering
+        linkr $shadir $regdir
+      else
+        echo ... no directory in mirror, linking
+        ln -s $shadir $argv[2]
+        echo $regdir >> .shadr_syms
+      end
+    else
+      echo ... is not a directory
+      if test -e "$regdir"
+        echo ... file found in mirror, linking with prefix
+        ln -s $shadir $argv[2]/shadr-$file
+        echo $argv[2]/shadr-$file >> .shadr_syms
+      else
+        echo ... no file in mirror, linking
+        ln -s $shadir $argv[2]
+        echo $regdir >> .shadr_syms
+      end
+    end
+  end
+end
+
+### Remove symlinks ###
+function ulink
+  if test -e "$argv[1]"
+    set -f files (string split '\n' (cat $argv[1]))
+    for file in $files
+      if test -L $file
+        trash-put $file
+      end
+    end
+  end
+
+  trash-put $argv[1]
+end
+
+switch $argv[1]
+  case open
+    vera open $PWD/.home.hc
+    linkr $PWD/.home $PWD/home
+  case close
+    ulink .shadr_syms
+    vera close $PWD/.home.hc
+end
