@@ -8,7 +8,7 @@
 # Because hyprland can't just have a window tree, like swaymsg -t get_tree, or #
 # even use absolute and relative coordinates consistently, or even provide     #
 # half decent documentation of the protocols/commands, this took way longer    #
-# than it should have and I'm salty
+# than it should have and I'm salty                                            #
 ################################################################################
 #                                Hari Ganti | 2025/03/11 | hariganti@gmail.com #
 ################################################################################
@@ -42,7 +42,7 @@ set -l monitor \
 set -l size $window[3..4]
 set -l pos \
   (math $window[1] - $monitor[1]) \
-  (math $window[2] - $monitor[2]) \
+  (math $window[2] - $monitor[2])
 
 # Uses relative coordinates (...) and quotes for the rule (no documentation...)
 hyprctl dispatch exec "[move $pos; size $size]" swayimg $argv[1]
