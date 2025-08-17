@@ -1,0 +1,16 @@
+#! /usr/bin/env fish
+
+################################################################################
+###                                  Backup                                  ###
+################################################################################
+# Simple script to copy a file and append ".baka" its file name for backups    #
+#                                                                              #
+# TODO:                                                                        #
+#   - Add option to back up everything in a directory if not given an arg      #
+#   - Make above interactive by default with non-interactive option            #
+#   - Make force option                                                        #
+################################################################################
+#                                Hari Ganti | 2025/08/03 | hariganti@gmail.com #
+################################################################################
+
+cp $argv[1] (string join . $argv[1] baka)
